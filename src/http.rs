@@ -1,6 +1,7 @@
 use wasm_bindgen::prelude::*;
 use reqwest;
-use web_sys::{console, window};
+use web_sys::{console, Window, WorkerGlobalScope};
+use js_sys::global;
 use serde_json::{self, Value};
 use serde_wasm_bindgen::{self};
 
@@ -8,7 +9,15 @@ fn guarantee_http_url(url: &str) -> String {
     if url.starts_with("http://") || url.starts_with("https://") {
         return url.to_string();
     }
-    let current_host = window().unwrap().origin();
+    let current_global = global().dyn_into::<Window>();
+    let current_host = match current_global {
+        Ok(window) => window.origin(),
+        Err(_) =>  {
+            let _global = global().dyn_into::<WorkerGlobalScope>().unwrap();
+            _global.origin()
+        }
+    };
+
     format!("{}{}", current_host, url)
 }
 
